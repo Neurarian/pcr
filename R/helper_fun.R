@@ -2,6 +2,8 @@
 #'
 #' @param vec A vector of numerics
 #' @param var A grouping variable
+#' @param mode Either 'collapse' or 'sub-sample' 
+#' @param n A vector of numerics
 #'
 #' @return A vector of numerics
 #'
@@ -10,16 +12,30 @@
 #' @examples
 #' vec <- rnorm(6, 30, 1)
 #' var <- rep(c('group1', 'group2'), 3)
+#' n <- sample(2:3, 6, replace = TRUE)
 #' pcr:::.pcr_average(vec, var)
+#' pcr:::.pcr_average(vec, var, mode = 'sub-sample, n = n)
 #'
 #' @importFrom stats aggregate
 
-.pcr_average <- function(vec, var) {
-  res <- aggregate(vec,
-                   by = list(var),
-                   FUN = mean)
-  res <- res[order(unique(var)),]
-  return(res$x)
+.pcr_average <- function(vec, var, mode = 'collapse', n = NULL) {
+  if(mode == 'collapse'){
+    res <- aggregate(vec,
+                     by = list(var),
+                     FUN = mean)
+    res <- res[order(unique(var)),]
+    return(res$x)
+  }
+  if else(mode == 'sub-sample'){
+    res <- aggregate(vec,
+                     by = list(var),
+                     FUN = function(x) sum(n*vec)/sum(n))
+    res <- res[order(unique(var)),]
+    return(res$x)
+  }
+  else {
+    stop("mode can be one of 'collapse' or 'sub-sample'.")
+  }
 }
 
 #' Get vector standard deviation by a variable
@@ -44,10 +60,37 @@
   res <- res[order(unique(var)),]
   return(res$x)
 }
+#' Helper to get vector aggregated coefficient of variance 
+#' by a sub-sampled variable
+#' 
+#' @param mu A vector of numerics
+#' @param n A vector of numerics
+#' @param sd A vector of numerics
+#'
+#' @return A vector of numerics
+#'
+#' @keywords internal
+#'
+#' @examples
+#' mu <- rnorm(6, 30, 1)
+#' n <- sample(2:3, 6, replace = TRUE)
+#' sd <- rnorm(6, .1, .01)
+#' pcr:::.pcr_sscv(mu, n, sd)
+#'
+#' @importFrom stats aggregate sd
+#' 
+.pcr_sscv <- function(mu, n, sd){
+  #Sample based mean
+  mu_aggr <- sum(n*mu)/sum(n)
+  #Sample based SD
+  sd_aggr <- sqrt((sum((n-1)*sd^2)+sum(n*(mu-mu_aggr)^2))/(sum(n)-1))
+  return(sd_aggr/mu_aggr)
+}
 
 #' Get vector coefficient of variance by a variable
 #'
 #' @inheritParams .pcr_average
+#' @param sd A vector of numerics
 #'
 #' @return A vector of numerics
 #'
@@ -56,16 +99,31 @@
 #' @examples
 #' vec <- rnorm(6, 30, 1)
 #' var <- rep(c('group1', 'group2'), 3)
+#' n <- sample(2:3, 6, replace = TRUE)
+#' sd <- rnorm(6, .1, .01)
 #' pcr:::.pcr_cv(vec, var)
+#' pcr:::.pcr_cv(vec, var, mode = 'sub-sample', n = n, sd = sd)
 #'
 #' @importFrom stats aggregate sd
 
-.pcr_cv <- function(vec, var) {
-  res <- aggregate(vec,
-                   by = list(var),
-                   FUN = function(x) sd(x)/mean(x))
-  res <- res[order(unique(var)),]               
-  return(res$x)
+.pcr_cv <- function(vec, var, mode = 'collapse', n = NULL, sd = NULL) {
+  if (mode == 'collapse'){
+    res <- aggregate(vec,
+                     by = list(var),
+                     FUN = function(x) sd(x)/mean(x))
+    res <- res[order(unique(var)),] 
+    return(res$x)
+  }
+  else if (mode == 'sub-sample'){
+    res <- aggregate(vec,
+                     by = list(var),
+                     FUN = function(x) pcr_sscv(vec, n, sd))
+    res <- res[order(unique(var)),]
+    return(res$x)
+  }
+  else {
+    stop("mode can be one of 'collapse' or 'sub-sample'.")
+  }
 }
 
 #' Normalize vector by another
