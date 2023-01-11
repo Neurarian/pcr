@@ -73,7 +73,8 @@
 #' Get vector standard deviation by a variable
 #'
 #' @inheritParams .pcr_average
-#'
+#' @param sd A vector of numerics
+#' 
 #' @return A vector of numerics
 #'
 #' @keywords internal
@@ -81,7 +82,10 @@
 #' @examples
 #' vec <- rnorm(6, 30, 1)
 #' var <- rep(c('group1', 'group2'), 3)
+#' n <- sample(2:3, 6, replace = TRUE)
+#' sd <- rnorm(6, .1, .01)
 #' pcr:::.pcr_sd(vec, var)
+#' pcr:::.pcr_sd(vec, var, mode = 'sub-sample', n = n, sd = sd)
 #'
 #' @importFrom stats aggregate sd
 
@@ -110,8 +114,7 @@ if (mode == 'collapse'){
 
 #' Get vector coefficient of variance by a variable
 #'
-#' @inheritParams .pcr_average
-#' @param sd A vector of numerics
+#' @inheritParams .pcr_sd
 #'
 #' @return A vector of numerics
 #'
